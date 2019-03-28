@@ -1,0 +1,513 @@
+[1mdiff --git a/README.md b/README.md[m
+[1mindex eb2587a..9d91555 100644[m
+[1m--- a/README.md[m
+[1m+++ b/README.md[m
+[36m@@ -1,2 +1,7 @@[m
+[31m-# crawlers_[m
+[31m-(WIP)[m
+[32m+[m[32m# Web Crawlers[m
+[32m+[m[32mCrawlers utilizados para recuperação e estruturação de informações.[m
+[32m+[m
+[32m+[m[32m# Lista[m
+[32m+[m
+[32m+[m[32m## crawler_01[m
+[32m+[m[32mCrawler utilizado para buscar imagens de produtos.[m
+[1mdiff --git a/crawler_01/__pycache__/crawler_prod_img.cpython-37.pyc b/crawler_01/__pycache__/crawler_prod_img.cpython-37.pyc[m
+[1mnew file mode 100644[m
+[1mindex 0000000..474dc6a[m
+Binary files /dev/null and b/crawler_01/__pycache__/crawler_prod_img.cpython-37.pyc differ
+[1mdiff --git a/crawler_01/__pycache__/preprocessing.cpython-37.pyc b/crawler_01/__pycache__/preprocessing.cpython-37.pyc[m
+[1mnew file mode 100644[m
+[1mindex 0000000..4bb9cd7[m
+Binary files /dev/null and b/crawler_01/__pycache__/preprocessing.cpython-37.pyc differ
+[1mdiff --git a/crawler_01/crawler_docmentation/webpages_list_metadata.txt b/crawler_01/crawler_docmentation/webpages_list_metadata.txt[m
+[1mnew file mode 100644[m
+[1mindex 0000000..c476990[m
+[1m--- /dev/null[m
+[1m+++ b/crawler_01/crawler_docmentation/webpages_list_metadata.txt[m
+[36m@@ -0,0 +1,16 @@[m
+[32m+[m[32mwebsite url[m
+[32m+[m
+[32m+[m[32mtag identifying target link[m
+[32m+[m[32mtag identifying target link property[m
+[32m+[m[32mtag identifying target link value[m
+[32m+[m[32mtag containing the actual link[m
+[32m+[m
+[32m+[m[32mimg link's tag[m
+[32m+[m[32mimg link's tag's property[m
+[32m+[m[32mimg link's tag's property's value[m
+[32m+[m[32mtag containing the actual img link[m
+[32m+[m
+[32m+[m[32mtag deciding if link should be saved[m
+[32m+[m[32mtag deciding if link should be saved's property[m
+[32m+[m[32mtag deciding if link should be saved's property's value[m
+[32m+[m[32mtag deciding if link should be saved's property's value -> actual value[m
+[1mdiff --git a/crawler_01/crawler_prod_img.py b/crawler_01/crawler_prod_img.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..b62992d[m
+[1m--- /dev/null[m
+[1m+++ b/crawler_01/crawler_prod_img.py[m
+[36m@@ -0,0 +1,158 @@[m
+[32m+[m[32m#!/usr/bin/python[m
+[32m+[m
+[32m+[m[32mclass ProdImageCrawler:[m
+[32m+[m[32m    def __init__(self, datetime, urllib, os, requests, bs, prods_list, candidate_webpages, names_to_avoid):[m
+[32m+[m[32m        self.datetime = datetime[m
+[32m+[m[32m        self.urllib = urllib[m
+[32m+[m[32m        self.os = os[m
+[32m+[m[32m        self.requests = requests[m
+[32m+[m[32m        self.bs = bs[m
+[32m+[m[32m        self.prods_list = prods_list[m
+[32m+[m[32m        self.candidate_webpages = candidate_webpages[m
+[32m+[m[32m        self.names_to_avoid = names_to_avoid[m
+[32m+[m
+[32m+[m[32m    @staticmethod[m
+[32m+[m[32m    def checkShouldBeIncluded(list_splited, prod_name):[m
+[32m+[m[32m        if prod_name in list_splited:[m
+[32m+[m[32m            return True[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            return False[m
+[32m+[m
+[32m+[m[32m    # Retrieves the name of an image from its url.[m
+[32m+[m[32m    @staticmethod[m
+[32m+[m[32m    def getImageNameFromUrl(img_url):[m
+[32m+[m[32m        img_name = [][m
+[32m+[m[32m        string_img_name = ''[m
+[32m+[m[32m        range_ = len(img_url)[m
+[32m+[m[32m        for i in range(0, range_):[m
+[32m+[m[32m            if img_url[((range_-1)-i)] == '/':[m
+[32m+[m[32m                break[m
+[32m+[m[32m            else:[m
+[32m+[m[32m                img_name = [img_url[((range_-1)-i)]] + img_name[m
+[32m+[m[32m        for char in img_name:[m
+[32m+[m[32m            string_img_name += char[m
+[32m+[m
+[32m+[m[32m        return string_img_name[m
+[32m+[m
+[32m+[m[32m    # Returns an url indexd by 'index' from the objects webpage list.[m
+[32m+[m[32m    def getCandidatePage(self, index):[m
+[32m+[m[32m        return self.candidate_webpages[index][0][m
+[32m+[m
+[32m+[m[32m    # Returns the goal url 1st target tag.[m
+[32m+[m[32m    def getPageTagsInfo(self, index):[m
+[32m+[m[32m        hyperlink_tag = self.candidate_webpages[index][1] # tag outside the 'img' tag.[m
+[32m+[m[32m        hyperlink_tag_prop = self.candidate_webpages[index][2] # class associated to the 'main_tag' tag.[m
+[32m+[m[32m        hyperlink_tag_prop_val = self.candidate_webpages[index][3] # class associated to the 'main_tag' tag.[m
+[32m+[m[32m        hyperlink_link = self.candidate_webpages[index][4] # class associated to the 'main_tag' tag.[m
+[32m+[m
+[32m+[m[32m        img_tag = self.candidate_webpages[index][5] # tag where the image is located.[m
+[32m+[m[32m        img_tag_identifier = self.candidate_webpages[index][6] # class associated to the tag associated with the image.[m
+[32m+[m[32m        img_tag_identifier_val = self.candidate_webpages[index][7][m
+[32m+[m[32m        img_tag_content = self.candidate_webpages[index][8][m
+[32m+[m
+[32m+[m[32m        name_tag = self.candidate_webpages[index][9][m
+[32m+[m[32m        name_tag_ident = self.candidate_webpages[index][10][m
+[32m+[m[32m        name_tag_ident_val = self.candidate_webpages[index][11][m
+[32m+[m[32m        name_tag_ident_val_content = self.candidate_webpages[index][12][m
+[32m+[m
+[32m+[m[32m        remove_from_final_url = self.candidate_webpages[index][13][m
+[32m+[m
+[32m+[m[32m        return [hyperlink_tag, hyperlink_tag_prop, hyperlink_tag_prop_val, hyperlink_link, img_tag,[m
+[32m+[m[32m        img_tag_identifier, img_tag_identifier_val, img_tag_content, name_tag, name_tag_ident,[m
+[32m+[m[32m        name_tag_ident_val, name_tag_ident_val_content, remove_from_final_url][m
+[32m+[m
+[32m+[m[32m    # Returns 'url's html content as plaintext.[m
+[32m+[m[32m    def pageToPlaintext(self, url):[m
+[32m+[m[32m        code = self.requests.get(url)[m
+[32m+[m[32m        plain = code.text[m
+[32m+[m[32m        return plain[m
+[32m+[m
+[32m+[m[32m    # Returns a BeautifulSoup object to be 'crawled' (parsed).[m
+[32m+[m[32m    def urlToBeautifulSoup(self, url):[m
+[32m+[m[32m        plain = self.pageToPlaintext(url)[m
+[32m+[m[32m        s = self.bs(plain, "html.parser")[m
+[32m+[m[32m        return s[m
+[32m+[m
+[32m+[m[32m    # Appends links found to the product processed.[m
+[32m+[m[32m    def saveFoundLink(self, img_links, prod_index, url_index):[m
+[32m+[m[32m        prod_name = self.prods_list[prod_index][1].replace("%20", "_")[m
+[32m+[m[32m        script_dir = self.os.path.dirname(__file__)[m
+[32m+[m
+[32m+[m[32m        if not self.os.path.exists("product_images"):[m
+[32m+[m[32m            self.os.makedirs("product_images")[m
+[32m+[m
+[32m+[m[32m        if not self.os.path.exists(("product_images/" + prod_name)):[m
+[32m+[m[32m            self.os.makedirs(("product_images/" + prod_name))[m
+[32m+[m
+[32m+[m[32m        if len(img_links) > 0:[m
+[32m+[m[32m            self.prods_list[prod_index][2] = 1[m
+[32m+[m[32m            count_aux = 0[m
+[32m+[m[32m            for img_url in img_links:[m
+[32m+[m[32m                self.urllib.request.urlretrieve(img_url, ("product_images/" + prod_name + "/" +[m
+[32m+[m[32m                prod_name + "_" + str(url_index) + "_" + str(count_aux) + '.jpg'))[m
+[32m+[m[32m                count_aux += 1[m
+[32m+[m
+[32m+[m
+[32m+[m[32m    # Check whether the found link is a valid one.[m
+[32m+[m[32m    def checkIsValidLink(self, url):[m
+[32m+[m[32m        if str(url) == 'None':[m
+[32m+[m[32m            return False[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            for name_to_avoid in self.names_to_avoid:[m
+[32m+[m[32m                if (name_to_avoid in str(url)):[m
+[32m+[m[32m                    return False[m
+[32m+[m[32m            return True[m
+[32m+[m[32m        return False[m
+[32m+[m
+[32m+[m[32m    # Craws through the url searching for the specified tag's related info.[m
+[32m+[m[32m    def crawPage(self, url_index, url, prod_index):[m
+[32m+[m[32m        t_info = self.getPageTagsInfo(url_index)[m
+[32m+[m[32m        s = self.urlToBeautifulSoup(url)[m
+[32m+[m[32m        imgs_hyperlinks = [][m
+[32m+[m
+[32m+[m[32m        for wrapper_tag in s.findAll(t_info[0], {t_info[1]:t_info[2]}):[m
+[32m+[m[32m            if str(wrapper_tag.get(t_info[3])) != 'None':[m
+[32m+[m[32m                imgs_hyperlinks.append(wrapper_tag.get(t_info[3]))[m
+[32m+[m
+[32m+[m[32m        final_img_links = [][m
+[32m+[m
+[32m+[m[32m        for link in imgs_hyperlinks:[m
+[32m+[m[32m            plain = self.pageToPlaintext(link)[m
+[32m+[m[32m            b = self.bs(plain, "html.parser")[m
+[32m+[m[32m            for name in b.findAll(t_info[8], {t_info[9]:t_info[10]}):[m
+[32m+[m[32m                cur_name = (name.get(t_info[11])).split()[m
+[32m+[m[32m                if cur_name[0].lower() == ('Doril').lower():[m
+[32m+[m[32m                    for target in b.findAll(t_info[4], {t_info[5]:t_info[6]}):[m
+[32m+[m[32m                        if self.checkIsValidLink(target.get(t_info[7])):[m
+[32m+[m[32m                            final_img_links.append(str(target.get(t_info[7])).replace(t_info[12], ''))[m
+[32m+[m
+[32m+[m[32m        self.saveFoundLink(final_img_links, prod_index, url_index)[m
+[32m+[m
+[32m+[m[32m    # Accesses the product list and, for each one, craws through the webpages known to the crawler.[m
+[32m+[m[32m    def crawThroughPages(self):[m
+[32m+[m[32m        url_index = 0[m
+[32m+[m[32m        for page in self.candidate_webpages:[m
+[32m+[m[32m            print("\nCrawling page: " + str(page[0]), end = '')[m
+[32m+[m[32m            prod_index = 0[m
+[32m+[m[32m            for prod_name in self.prods_list:[m
+[32m+[m[32m                self.crawPage(url_index, (page[0] + prod_name[1]), prod_index)[m
+[32m+[m[32m                prod_index += 1[m
+[32m+[m[32m            url_index += 1[m
+[32m+[m[32m        print("\n\n[ PROCESSING FINISHED ]")[m
+[32m+[m[32m        return[m
+[32m+[m
+[32m+[m[32m    # Generates a log file (inside log folder) containing all products with no image results.[m
+[32m+[m[32m    def generateMissingProdsList(self):[m
+[32m+[m[32m        script_dir = self.os.path.dirname(__file__)[m
+[32m+[m[32m        if not self.os.path.exists("logs"):[m
+[32m+[m[32m            self.os.makedirs("logs")[m
+[32m+[m
+[32m+[m[32m        current_time = (str(self.datetime.datetime.now().time()).replace(":", "_")).replace(".", "-")[m
+[32m+[m[32m        final_path = 'logs/missing_prods_' + current_time + ".txt"[m
+[32m+[m
+[32m+[m[32m        abs_file_path = self.os.path.join(script_dir, final_path)[m
+[32m+[m[32m        log_file = open(abs_file_path, "a+")[m
+[32m+[m
+[32m+[m[32m        for prod in self.prods_list:[m
+[32m+[m[32m            if prod[2] == 0:[m
+[32m+[m[32m                log_file.write(prod[0] + " " + prod[1].replace("%20", " ") + "\n")[m
+[1mdiff --git a/crawler_01/main.py b/crawler_01/main.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..f162842[m
+[1m--- /dev/null[m
+[1m+++ b/crawler_01/main.py[m
+[36m@@ -0,0 +1,23 @@[m
+[32m+[m[32m#!/usr/bin/python[m
+[32m+[m
+[32m+[m[32m# Native imports[m
+[32m+[m[32mimport sys, os, random, requests, datetime[m
+[32m+[m[32mfrom bs4 import BeautifulSoup[m
+[32m+[m[32mimport urllib[m
+[32m+[m
+[32m+[m[32m# User-defined imports[m
+[32m+[m[32mimport preprocessing[m
+[32m+[m[32mfrom crawler_prod_img import ProdImageCrawler[m
+[32m+[m
+[32m+[m[32mdef main(prods_file, webpages_file, names_to_avoid):[m
+[32m+[m[32m    # Parse input files.[m
+[32m+[m[32m    prod_page_genericNames_lists = preprocessing.parseInputeFiles(prods_file, webpages_file, names_to_avoid)[m
+[32m+[m[32m    # Creates a crawler instance.[m
+[32m+[m[32m    crawler = ProdImageCrawler(datetime, urllib, os, requests, BeautifulSoup, prod_page_genericNames_lists[0], prod_page_genericNames_lists[1], prod_page_genericNames_lists[2])[m
+[32m+[m[32m    # Crawling through single page.[m
+[32m+[m[32m    crawler.crawThroughPages()[m
+[32m+[m[32m    # Generates a log file (inside log folder) containing all products with no image results.[m
+[32m+[m[32m    crawler.generateMissingProdsList()[m
+[32m+[m
+[32m+[m[32mif __name__ == '__main__':[m
+[32m+[m[32m    main(str(sys.argv[1]), str(sys.argv[2]), str(sys.argv[3]))[m
+[1mdiff --git a/crawler_01/names_to_avoid.txt b/crawler_01/names_to_avoid.txt[m
+[1mnew file mode 100644[m
+[1mindex 0000000..8339d98[m
+[1m--- /dev/null[m
+[1m+++ b/crawler_01/names_to_avoid.txt[m
+[36m@@ -0,0 +1,12 @@[m
+[32m+[m[32mdrogasil_tarja_vermelha_02.jpg[m
+[32m+[m[32mdrogasil_tarja_preta_02.jpg[m
+[32m+[m[32mdrogasil_tarja_vermelha_amarela_02.jpg[m
+[32m+[m[32mdrogasil_tarja_preta_amarela_02.jpg[m
+[32m+[m[32mVSPMp.jpg?[m
+[32m+[m[32mVSPMp.jpg?[m
+[32m+[m[32mVSPMp.jpg?[m
+[32m+[m[32mC1p.jpg?[m
+[32m+[m[32mVSPM-Gp.jpg?[m
+[32m+[m[32mB1p.jpg?[m
+[32m+[m[32mB1p.jpg?[m
+[32m+[m[32mB1-Gp.jpg?[m
+[1mdiff --git a/crawler_01/preprocessing.py b/crawler_01/preprocessing.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..21b6ee5[m
+[1m--- /dev/null[m
+[1m+++ b/crawler_01/preprocessing.py[m
+[36m@@ -0,0 +1,77 @@[m
+[32m+[m[32m#!/usr/bin/python[m
+[32m+[m
+[32m+[m[32mimport sys[m
+[32m+[m
+[32m+[m[32m# Prints each element of a list line by line.[m
+[32m+[m[32mdef printList(list):[m
+[32m+[m[32m    for data in list:[m
+[32m+[m[32m        print(data)[m
+[32m+[m
+[32m+[m[32m# Returns if input file ends with an '.txt' extension.[m
+[32m+[m[32mdef validInputFile(input_file):[m
+[32m+[m[32m    a = input_file[len(input_file)-1][m
+[32m+[m[32m    b = input_file[len(input_file)-2][m
+[32m+[m[32m    c = input_file[len(input_file)-3][m
+[32m+[m[32m    d = input_file[len(input_file)-4][m
+[32m+[m[32m    if (d == '.' and c == 't' and b == 'x' and a == 't'):[m
+[32m+[m[32m        return True[m
+[32m+[m[32m    return False[m
+[32m+[m
+[32m+[m[32m#   Open an input file containing 'prod_barcode prod_name' on each line[m
+[32m+[m[32m# and returns and array containing [[barcode, name, status]].[m
+[32m+[m[32mdef openAndParseProdInputFile(input_file):[m
+[32m+[m[32m    prods_list = open(input_file, "r")[m
+[32m+[m[32m    result = [][m
+[32m+[m[32m    for line in prods_list:[m
+[32m+[m[32m        line_split = line.split()[m
+[32m+[m[32m        prod_barcode = line_split[0][m
+[32m+[m[32m        prod_name = ''[m
+[32m+[m[32m        for i in range(len(line_split)):[m
+[32m+[m[32m            if i != 0:[m
+[32m+[m[32m                if i != (len(line_split)-1):[m
+[32m+[m[32m                    prod_name += line_split[i].lower() + "%20"[m
+[32m+[m[32m                else:[m
+[32m+[m[32m                    prod_name += line_split[i].lower()[m
+[32m+[m[32m        result.append([prod_barcode, prod_name, 0])[m
+[32m+[m[32m    return result[m
+[32m+[m
+[32m+[m[32m#   Open an input file containing 'prod_barcode prod_name' on each line[m
+[32m+[m[32m# and returns and array containing [[barcode, name, status]].[m
+[32m+[m[32mdef openAndParseAvoidGenericNamesListInputFile(input_file):[m
+[32m+[m[32m    generic_names = open(input_file, "r")[m
+[32m+[m[32m    result = [][m
+[32m+[m[32m    for line in generic_names:[m
+[32m+[m[32m        result.append(line.split()[0])[m
+[32m+[m[32m    return result[m
+[32m+[m
+[32m+[m[32m#   Open an input file containing 'webpage_url' on each line[m
+[32m+[m[32m# and returns it as a list.[m
+[32m+[m[32mdef openAndParseWebpagesInputFile(input_file):[m
+[32m+[m[32m    webpages_list = open(input_file, "r")[m
+[32m+[m[32m    result = [][m
+[32m+[m[32m    for webpage in webpages_list:[m
+[32m+[m[32m        parsed_line = webpage.split() # -> [url, target_1, targe_2, tag, class][m
+[32m+[m[32m        result.append(parsed_line)[m
+[32m+[m[32m    return result[m
+[32m+[m
+[32m+[m[32m# Parses input files and returns the products list as well as the webpages list.[m
+[32m+[m[32mdef parseInputeFiles(prods_file, webpages_file, generic_names):[m
+[32m+[m[32m    # Parse products input file.[m
+[32m+[m[32m    if validInputFile(prods_file):[m
+[32m+[m[32m        parsed_prods_list = openAndParseProdInputFile(prods_file)[m
+[32m+[m[32m    else:[m
+[32m+[m[32m        sys.exit("\nProducts input file does not have '.txt' extension.")[m
+[32m+[m
+[32m+[m[32m    # Parse webpages input file.[m
+[32m+[m[32m    if validInputFile(webpages_file):[m
+[32m+[m[32m        parsed_urls_list = openAndParseWebpagesInputFile(webpages_file)[m
+[32m+[m[32m    else:[m
+[32m+[m[32m        sys.exit("\nWebpages input file does not have '.txt' extension.")[m
+[32m+[m
+[32m+[m[32m    # Parse forbiden generic names input file.[m
+[32m+[m[32m    if validInputFile(generic_names):[m
+[32m+[m[32m        parsed_generic_names_list = openAndParseAvoidGenericNamesListInputFile(generic_names)[m
+[32m+[m[32m    else:[m
+[32m+[m[32m        sys.exit("\nGeneric names input file does not have '.txt' extension.")[m
+[32m+[m
+[32m+[m[32m    return [parsed_prods_list, parsed_urls_list, parsed_generic_names_list][m
+[1mdiff --git a/crawler_01/prod_list.txt b/crawler_01/prod_list.txt[m
+[1mnew file mode 100644[m
+[1mindex 0000000..db617bd[m
+[1m--- /dev/null[m
+[1m+++ b/crawler_01/prod_list.txt[m
+[36m@@ -0,0 +1,2 @@[m
+[32m+[m[32m7896862912024 DORIL[m
+[32m+[m[32m7897076911575 CLORIDRATO DE AMIODARONA[m
+[1mdiff --git a/crawler_01/webpages_list.txt b/crawler_01/webpages_list.txt[m
+[1mnew file mode 100644[m
+[1mindex 0000000..dfdb373[m
+[1m--- /dev/null[m
+[1m+++ b/crawler_01/webpages_list.txt[m
+[36m@@ -0,0 +1,2 @@[m
+[32m+[m[32mhttps://busca.drogasil.com.br/search?w= a data-sli-test resultlink title meta property og:image content meta property og:title content ?width=135&height=135&quality=85&type=resize[m
+[32m+[m[32mhttps://www.drogariaspacheco.com.br/ a class productPrateleira href meta property og:image content meta property og:title content none*[m
+[1mdiff --git a/crawler_achei/__pycache__/crawler_prod_img.cpython-37.pyc b/crawler_achei/__pycache__/crawler_prod_img.cpython-37.pyc[m
+[1mdeleted file mode 100644[m
+[1mindex df0e27f..0000000[m
+Binary files a/crawler_achei/__pycache__/crawler_prod_img.cpython-37.pyc and /dev/null differ
+[1mdiff --git a/crawler_achei/__pycache__/preprocessing.cpython-37.pyc b/crawler_achei/__pycache__/preprocessing.cpython-37.pyc[m
+[1mdeleted file mode 100644[m
+[1mindex f836e4b..0000000[m
+Binary files a/crawler_achei/__pycache__/preprocessing.cpython-37.pyc and /dev/null differ
+[1mdiff --git a/crawler_achei/crawler_prod_img.py b/crawler_achei/crawler_prod_img.py[m
+[1mdeleted file mode 100644[m
+[1mindex 598a2a9..0000000[m
+[1m--- a/crawler_achei/crawler_prod_img.py[m
+[1m+++ /dev/null[m
+[36m@@ -1,24 +0,0 @@[m
+[31m-#!/usr/bin/python[m
+[31m-[m
+[31m-class ProdImageCrawler:[m
+[31m-    def __init__(self, requests, bs, prods_list, candidate_webpages):[m
+[31m-        self.requests = requests[m
+[31m-        self.bs = bs[m
+[31m-        self.prods_list = prods_list[m
+[31m-        self.candidate_webpages = candidate_webpages[m
+[31m-[m
+[31m-    # Returns an url indexd by 'index' from the objects webpage list.[m
+[31m-    def getCandidatePage(self, index):[m
+[31m-        return self.candidate_webpages[index][m
+[31m-[m
+[31m-    # Returns 'url's html content as plaintext.[m
+[31m-    def pageToPlaintext(self, url):[m
+[31m-        code = self.requests.get(url)[m
+[31m-        plain = code.text[m
+[31m-        return plain[m
+[31m-[m
+[31m-    # Returns a BeautifulSoup object to be 'crawled' (parsed).[m
+[31m-    def urlToBeautifulSoup(self, url_index):[m
+[31m-        plain = self.pageToPlaintext(self.getCandidatePage(url_index))[m
+[31m-        s = self.bs(plain, "html.parser")[m
+[31m-        return s[m
+[1mdiff --git a/crawler_achei/main.py b/crawler_achei/main.py[m
+[1mdeleted file mode 100644[m
+[1mindex 4475478..0000000[m
+[1m--- a/crawler_achei/main.py[m
+[1m+++ /dev/null[m
+[36m@@ -1,36 +0,0 @@[m
+[31m-#!/usr/bin/python[m
+[31m-[m
+[31m-# Native imports[m
+[31m-import sys, os, random, requests[m
+[31m-from bs4 import BeautifulSoup[m
+[31m-[m
+[31m-# User-defined imports[m
+[31m-import preprocessing[m
+[31m-from crawler_prod_img import ProdImageCrawler[m
+[31m-[m
+[31m-def main():[m
+[31m-    # Parse products input file.[m
+[31m-    if preprocessing.validInputFile(str(sys.argv[1])):[m
+[31m-        parsed_prods_list = preprocessing.openAndParseProdInputFile(str(sys.argv[1]))[m
+[31m-    else:[m
+[31m-        print("\nProducts input file does not have '.txt' extension.")[m
+[31m-        return[m
+[31m-[m
+[31m-    # Parse webpages input file.[m
+[31m-    if preprocessing.validInputFile(str(sys.argv[2])):[m
+[31m-        parsed_urls_list = preprocessing.openAndParseWebpagesInputFile(str(sys.argv[2]))[m
+[31m-    else:[m
+[31m-        print("\nWebpages input file does not have '.txt' extension.")[m
+[31m-        return[m
+[31m-[m
+[31m-    # Creates a crawler instance.[m
+[31m-    crawler = ProdImageCrawler(requests, BeautifulSoup, parsed_prods_list, parsed_urls_list)[m
+[31m-[m
+[31m-    s = crawler.urlToBeautifulSoup(0)[m
+[31m-    for link in s.findAll('a', {'class':'a-link-normal a-text-normal'}):[m
+[31m-        for img_tag in link.findAll('img'):[m
+[31m-            print('\nProd name: ' + img_tag.get('alt'))[m
+[31m-            print('Prod link: ' + img_tag.get('src'))[m
+[31m-[m
+[31m-if __name__ == '__main__':[m
+[31m-    main()[m
+[1mdiff --git a/crawler_achei/preprocessing.py b/crawler_achei/preprocessing.py[m
+[1mdeleted file mode 100644[m
+[1mindex ca1ba56..0000000[m
+[1m--- a/crawler_achei/preprocessing.py[m
+[1m+++ /dev/null[m
+[36m@@ -1,40 +0,0 @@[m
+[31m-#!/usr/bin/python[m
+[31m-[m
+[31m-# Prints each element of a list line by line.[m
+[31m-def printList(list):[m
+[31m-    for data in list:[m
+[31m-        print(data)[m
+[31m-[m
+[31m-# Returns if input file ends with an '.txt' extension.[m
+[31m-def validInputFile(input_file):[m
+[31m-    a = input_file[len(input_file)-1][m
+[31m-    b = input_file[len(input_file)-2][m
+[31m-    c = input_file[len(input_file)-3][m
+[31m-    d = input_file[len(input_file)-4][m
+[31m-    if (d == '.' and c == 't' and b == 'x' and a == 't'):[m
+[31m-        return True[m
+[31m-    return False[m
+[31m-[m
+[31m-#   Open an input file containing 'prod_barcode prod_name' on each line[m
+[31m-# and returns and array containing [[barcode, name, status]].[m
+[31m-def openAndParseProdInputFile(input_file):[m
+[31m-    prods_list = open(input_file, "r")[m
+[31m-    result = [][m
+[31m-    for line in prods_list:[m
+[31m-        line_split = line.split()[m
+[31m-        prod_barcode = line_split[0][m
+[31m-        prod_name = ''[m
+[31m-        for i in range(len(line_split)):[m
+[31m-            if i != 0:[m
+[31m-                prod_name += (line_split[i] + "_")[m
+[31m-        result.append([prod_barcode, prod_name, 0])[m
+[31m-    return result[m
+[31m-[m
+[31m-#   Open an input file containing 'webpage_url' on each line[m
+[31m-# and returns it as a list.[m
+[31m-def openAndParseWebpagesInputFile(input_file):[m
+[31m-    webpages_list = open(input_file, "r")[m
+[31m-    result = [][m
+[31m-    for webpage in webpages_list:[m
+[31m-        result.append(webpage)[m
+[31m-    return result[m
+[1mdiff --git a/crawler_achei/prod_list.txt b/crawler_achei/prod_list.txt[m
+[1mdeleted file mode 100644[m
+[1mindex 2a4c3e8..0000000[m
+[1m--- a/crawler_achei/prod_list.txt[m
+[1m+++ /dev/null[m
+[36m@@ -1,20 +0,0 @@[m
+[31m-7896862912024 FUNGONAZOL[m
+[31m-7897076911575 CLORIDRATO DE AMIODARONA[m
+[31m-7896206407681 TENORETIC[m
+[31m-7898040320584 GINESSE[m
+[31m-7899547506839 IBUPROFENO[m
+[31m-7891721100130 CEBION GLICOSE[m
+[31m-7895858015206 ENABLEX[m
+[31m-7891317446659 RISPERIDONA[m
+[31m-7896212425549 TYLEX[m
+[31m-7898075310901 LIDOPASS[m
+[31m-7896094914704 MIGRAINEX[m
+[31m-7891045013284 PLENITUS[m
+[31m-5702150142986 LEXAPRO[m
+[31m-7896862920050 GRIPINEW[m
+[31m-7891317469238 SINOT CLAV[m
+[31m-7896181924487 CANDESARTANA CILEXETILA[m
+[31m-7891721100130 CEBION GLICOSE[m
+[31m-7891142128133 CELESTONE[m
+[31m-7897076913937 SELZIC[m
+[31m-7896422507349 CETOPROFENO[m
+[1mdiff --git a/crawler_achei/webpages_list.txt b/crawler_achei/webpages_list.txt[m
+[1mdeleted file mode 100644[m
+[1mindex 1141905..0000000[m
+[1m--- a/crawler_achei/webpages_list.txt[m
+[1m+++ /dev/null[m
+[36m@@ -1 +0,0 @@[m
+[31m-https://www.amazon.in/s/ref=nb_sb_noss?url=node%3D1805560031&field-keywords=smartphone&rh=n%3A976419031%2Cn%3A1389401031%2Cn%3A1389432031%2Cn%3A1805560031%2Ck%3Asmartphone[m
