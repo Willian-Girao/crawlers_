@@ -20,35 +20,7 @@ https://www.target1/search?w= a data-sli-test resultlink title meta property og:
 https://www.target2/ a class productPrateleira href meta property og:image content meta property og:title content none*
 ...
 ```
-The structure of the above file is as follows: a b c d e f g h i j k l m n.
-
-**a** - Website's url
-
-**b** - Tag identifying the target image's link within **a**
-
-**c** - Property within **b**
-
-**d** - Value associated to **c**
-
-**e** - Property containing the link the a page containing the target image
-
-**f** - Tag containing the image's link
-
-**g** - Property within **f**
-
-**h** - Value associated to **g**
-
-**i** - Property containing the actual image's url
-
-**j** - Tag utilized to decide if a url is feasible
-
-**k** - Property whitin **j**
-
-**l** - Value associated to **k**
-
-**m** - Property within **j** containing the products name
-
-**n** - String to be removed from the images's url (should none be remove, replace it with 'none*')
+The structure of the above file is as follows: a b c d e f g h i j k l m n. **a** website's url; **b** tag identifying the target image's link within **a**; **c** property within **b**; **d** value associated to **c**; **e** property containing the link the a page containing the target image; **f** tag containing the image's link; **g** property within **f**; **h** value associated to **g**; **i** property containing the actual image's url; **j** tag utilized to decide if a url is feasible; **k** property whitin **j**; **l** value associated to **k**; **m** property within **j** containing the products name; **n** string to be removed from the images's url (should none be remove, replace it with 'none*').
 
 #### strings_to_avoid.txt
 ```txt
