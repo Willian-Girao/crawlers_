@@ -38,7 +38,7 @@ def openAndParseProdInputFile(input_file):
                     prod_name += removeAccents(line_split[i].lower()) + "%20"
                 else:
                     prod_name += removeAccents(line_split[i].lower())
-        x = (prod_name.replace(",", "%2C")).replace("/", "%2F")
+        x = (prod_name.replace(",", "%2C")).replace("/", "%2F").replace(":", "").replace("*", "").replace("<", "").replace(">", "").replace("|", "").replace("\'", "")
         result.append([prod_barcode, x, 0])
     return result
 
