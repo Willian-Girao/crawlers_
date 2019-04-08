@@ -75,7 +75,8 @@ class ProdImageCrawler:
 
     # Appends links found to the product processed.
     def saveFoundLink(self, img_links, prod_index, url_index):
-        prod_name = self.prods_list[prod_index][1].replace("%20", "_")
+        prod_name = ((self.prods_list[prod_index][1].replace("%20", "_")).replace("%2C", "_")).replace("%2F", "_")
+        barcode = self.prods_list[prod_index][0]
         script_dir = self.os.path.dirname(__file__)
 
         if not self.os.path.exists("product_images"):
@@ -91,6 +92,8 @@ class ProdImageCrawler:
                 self.urllib.request.urlretrieve(img_url, ("product_images/" + prod_name + "/" +
                 prod_name + "_" + str(url_index) + "_" + str(count_aux) + '.jpg'))
                 count_aux += 1
+            if not self.os.path.exists(("product_images/" + prod_name + "/" + barcode)):
+                self.os.makedirs(("product_images/" + prod_name + "/" + barcode))
 
 
     # Check whether the found link is a valid one.
@@ -106,6 +109,7 @@ class ProdImageCrawler:
 
     # Craws through the url searching for the specified tag's related info.
     def crawPage(self, url_index, url, prod_index):
+        print(url)
         t_info = self.getPageTagsInfo(url_index)
         s = self.urlToBeautifulSoup(url)
         imgs_hyperlinks = []
@@ -121,7 +125,7 @@ class ProdImageCrawler:
             b = self.bs(plain, "html.parser")
             for name in b.findAll(t_info[8], {t_info[9]:t_info[10]}):
                 cur_name = (name.get(t_info[11])).split()
-                if cur_name[0].lower() == ('Doril').lower():
+                if cur_name[0].lower() == (self.prods_list[prod_index][1].split('%20')[0]).lower():
                     for target in b.findAll(t_info[4], {t_info[5]:t_info[6]}):
                         if self.checkIsValidLink(target.get(t_info[7])):
                             final_img_links.append(str(target.get(t_info[7])).replace(t_info[12], ''))
@@ -132,7 +136,7 @@ class ProdImageCrawler:
     def crawThroughPages(self):
         url_index = 0
         for page in self.candidate_webpages:
-            print("\nCrawling page: " + str(page[0]), end = '')
+            # print("\nCrawling page: " + str(page[0]), end = '')
             prod_index = 0
             for prod_name in self.prods_list:
                 self.crawPage(url_index, (page[0] + prod_name[1]), prod_index)

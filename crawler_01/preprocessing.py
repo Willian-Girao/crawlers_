@@ -1,6 +1,7 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
-import sys
+import sys, unicodedata
 
 # Prints each element of a list line by line.
 def printList(list):
@@ -17,10 +18,15 @@ def validInputFile(input_file):
         return True
     return False
 
+def removeAccents(string):
+    normal = unicodedata.normalize('NFKD', string).encode('ASCII', 'ignore')
+    nor = (str(normal).replace("b'", "")).replace("'", "")
+    return nor
+
 #   Open an input file containing 'prod_barcode prod_name' on each line
 # and returns and array containing [[barcode, name, status]].
 def openAndParseProdInputFile(input_file):
-    prods_list = open(input_file, "r")
+    prods_list = open(input_file, "r", encoding='utf-8')
     result = []
     for line in prods_list:
         line_split = line.split()
@@ -29,10 +35,11 @@ def openAndParseProdInputFile(input_file):
         for i in range(len(line_split)):
             if i != 0:
                 if i != (len(line_split)-1):
-                    prod_name += line_split[i].lower() + "%20"
+                    prod_name += removeAccents(line_split[i].lower()) + "%20"
                 else:
-                    prod_name += line_split[i].lower()
-        result.append([prod_barcode, prod_name, 0])
+                    prod_name += removeAccents(line_split[i].lower())
+        x = (prod_name.replace(",", "%2C")).replace("/", "%2F")
+        result.append([prod_barcode, x, 0])
     return result
 
 #   Open an input file containing 'prod_barcode prod_name' on each line
