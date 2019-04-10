@@ -1,0 +1,16 @@
+website url
+
+tag identifying target link
+tag identifying target link property
+tag identifying target link value
+tag containing the actual link
+
+img link's tag
+img link's tag's property
+img link's tag's property's value
+tag containing the actual img link
+
+tag deciding if link should be saved
+tag deciding if link should be saved's property
+tag deciding if link should be saved's property's value
+tag deciding if link should be saved's property's value -> actual value
