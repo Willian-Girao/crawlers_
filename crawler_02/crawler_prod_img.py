@@ -1,15 +1,17 @@
 #!/usr/bin/python
 
 class ProdImageCrawler:
-    def __init__(self, datetime, urllib, os, requests, bs, prods_list, candidate_webpages, names_to_avoid):
+    def __init__(self, datetime, urllib, os, requests, bs, json, prods_list, candidate_webpages, names_to_avoid, tags_info):
         self.datetime = datetime
         self.urllib = urllib
         self.os = os
         self.requests = requests
         self.bs = bs
+        self.tags_info = json
         self.prods_list = prods_list
         self.candidate_webpages = candidate_webpages
         self.names_to_avoid = names_to_avoid
+        self.tags_info = tags_info
 
     @staticmethod
     def checkShouldBeIncluded(list_splited, prod_name):
@@ -74,7 +76,7 @@ class ProdImageCrawler:
         return s
 
     # Appends links found to the product processed.
-    def saveFoundLink(self, img_links, prod_index, url_index):
+    def saveFoundLink(self, img_link, prod_index, url_index, prod_metadata):
         prod_name = ((self.prods_list[prod_index][1].replace("%20", "_")).replace("%2C", "_")).replace("%2F", "_")
         prod_name_aux = self.prods_list[prod_index][1].replace("%2F", "/").replace("%2C", ",").replace("%20", " ")
         barcode = self.prods_list[prod_index][0]
@@ -83,22 +85,11 @@ class ProdImageCrawler:
         if not self.os.path.exists("product_images"):
             self.os.makedirs("product_images")
 
-        if not self.os.path.exists(("product_images/" + prod_name)):
-            self.os.makedirs(("product_images/" + prod_name))
+        self.prods_list[prod_index][2] = 1
+        self.urllib.request.urlretrieve(img_link, ("product_images/" + str(barcode) + '.jpg'))
 
-        if len(img_links) > 0:
-            self.prods_list[prod_index][2] = 1
-            file_name = prod_name + "_" + str(url_index) + "_0.jpg"
-            json = '"' + barcode + '": {"ean": "' + barcode + '", "name": "' + prod_name_aux + '", "file": "' + file_name + '"},\n'
-            json_out_file = open("data_as_json.txt", "a+")
-            json_out_file.write(json)
-            count_aux = 0
-            for img_url in img_links:
-                self.urllib.request.urlretrieve(img_url, ("product_images/" + prod_name + "/" +
-                prod_name + "_" + str(url_index) + "_" + str(count_aux) + '.jpg'))
-                count_aux += 1
-            if not self.os.path.exists(("product_images/" + prod_name + "/" + barcode)):
-                self.os.makedirs(("product_images/" + prod_name + "/" + barcode))
+        json_out = open("prods_json_metadata.txt", "a+")
+        json_out.write(prod_metadata + "\n")
 
 
     # Check whether the found link is a valid one.
@@ -115,56 +106,100 @@ class ProdImageCrawler:
     # Craws through the url searching for the specified tag's related info.
     def crawPage(self, url_index, url, prod_index):
         try:
-            print(url)
-            t_info = self.getPageTagsInfo(url_index)
+            print("Barcode: " + str(self.prods_list[prod_index][0]))
             s = self.urlToBeautifulSoup(url)
+
             imgs_hyperlinks = []
 
-            for wrapper_tag in s.findAll(t_info[0], {t_info[1]:t_info[2]}):
-                if str(wrapper_tag.get(t_info[3])) != 'None':
-                    imgs_hyperlinks.append(wrapper_tag.get(t_info[3]))
+            for wrapper_tag in s.findAll(self.tags_info['tag_1'], {self.tags_info['tag_property_1']:self.tags_info['tag_property_value_1']}):
+                if str(wrapper_tag.get(self.tags_info['property_page_img_link_1'])) != 'None':
+                    imgs_hyperlinks.append(wrapper_tag.get(self.tags_info['property_page_img_link_1']))
 
             final_img_links = []
 
             for link in imgs_hyperlinks:
                 plain = self.pageToPlaintext(link)
                 b = self.bs(plain, "html.parser")
-                for name in b.findAll(t_info[8], {t_info[9]:t_info[10]}):
-                    cur_name = (name.get(t_info[11])).split()
-                    if cur_name[0].lower() == (self.prods_list[prod_index][1].split('%20')[0]).lower():
-                        for target in b.findAll(t_info[4], {t_info[5]:t_info[6]}):
-                            if self.checkIsValidLink(target.get(t_info[7])):
-                                final_img_links.append(str(target.get(t_info[7])).replace(t_info[12], ''))
 
-            self.saveFoundLink(final_img_links, prod_index, url_index)
+                fields = []
+                values = []
+
+                for field in b.findAll(self.tags_info['target_tag_1'], {self.tags_info['target_tag_property']:self.tags_info['target_tag_property_value_1']}):
+                    fields.append(field.contents[0])
+
+                for content in b.findAll(self.tags_info['target_tag_2'], {self.tags_info['target_tag_property']:self.tags_info['target_tag_property_value_2']}):
+                    values.append(content.contents[0])
+
+                if values[1] == self.prods_list[prod_index][0]:
+                    x = '"' + str(values[1]) + '": {'
+                    for i in range(len(fields)):
+                        if i == 0:
+                            pass
+                        elif i == 6:
+                            x += '"' + str(fields[i]).replace(" ", "_").lower() + '": "' + str(values[i]['href'].replace(" ", "")) + '", '
+                        elif i == (len(fields)-1):
+                            x += '"' + str(fields[i]).replace(" ", "_").lower() + '": "' + str(values[i]) + '" },'
+                        else:
+                            x += '"' + str(fields[i]).replace(" ", "_").lower() + '": "' + str(values[i]) + '", '
+
+                    for target in b.findAll(self.tags_info['tag_2'], {self.tags_info['tag_property_2']:self.tags_info['tag_property_value_2']}):
+                        if self.checkIsValidLink(target.get(self.tags_info['property_page_img_link_2'])):
+                            final_img_links.append(str(target.get(self.tags_info['property_page_img_link_2'])).replace(self.tags_info['expurge'], ''))
+
+                    if len(final_img_links) > 0:
+                        self.saveFoundLink(final_img_links[0], prod_index, url_index, x)
+                    else:
+                        not_found = open("prods_not_found.txt", "a+")
+                        not_found.write(str(self.prods_list[prod_index][0]) + " " + str(self.prods_list[prod_index][1]) + "\n")
         except Exception as e:
             fail = True
             count = 0
             while (fail and (count < 3)):
                 try:
-                    print(url)
-                    t_info = self.getPageTagsInfo(url_index)
-                    s = self.urlToBeautifulSoup(url)
-                    imgs_hyperlinks = []
+                        s = self.urlToBeautifulSoup(url)
 
-                    for wrapper_tag in s.findAll(t_info[0], {t_info[1]:t_info[2]}):
-                        if str(wrapper_tag.get(t_info[3])) != 'None':
-                            imgs_hyperlinks.append(wrapper_tag.get(t_info[3]))
+                        imgs_hyperlinks = []
 
-                    final_img_links = []
+                        for wrapper_tag in s.findAll(self.tags_info['tag_1'], {self.tags_info['tag_property_1']:self.tags_info['tag_property_value_1']}):
+                            if str(wrapper_tag.get(self.tags_info['property_page_img_link_1'])) != 'None':
+                                imgs_hyperlinks.append(wrapper_tag.get(self.tags_info['property_page_img_link_1']))
 
-                    for link in imgs_hyperlinks:
-                        plain = self.pageToPlaintext(link)
-                        b = self.bs(plain, "html.parser")
-                        for name in b.findAll(t_info[8], {t_info[9]:t_info[10]}):
-                            cur_name = (name.get(t_info[11])).split()
-                            if cur_name[0].lower() == (self.prods_list[prod_index][1].split('%20')[0]).lower():
-                                for target in b.findAll(t_info[4], {t_info[5]:t_info[6]}):
-                                    if self.checkIsValidLink(target.get(t_info[7])):
-                                        final_img_links.append(str(target.get(t_info[7])).replace(t_info[12], ''))
+                        final_img_links = []
 
-                    self.saveFoundLink(final_img_links, prod_index, url_index)
-                    fail = False
+                        for link in imgs_hyperlinks:
+                            plain = self.pageToPlaintext(link)
+                            b = self.bs(plain, "html.parser")
+
+                            fields = []
+                            values = []
+
+                            for field in b.findAll(self.tags_info['target_tag_1'], {self.tags_info['target_tag_property']:self.tags_info['target_tag_property_value_1']}):
+                                fields.append(field.contents[0])
+
+                            for content in b.findAll(self.tags_info['target_tag_2'], {self.tags_info['target_tag_property']:self.tags_info['target_tag_property_value_2']}):
+                                values.append(content.contents[0])
+
+                            if values[1] == self.prods_list[prod_index][0]:
+                                x = '"' + str(values[1]) + '": {'
+                                for i in range(len(fields)):
+                                    if i == 0:
+                                        pass
+                                    elif i == 6:
+                                        x += '"' + str(fields[i]).replace(" ", "_").lower() + '": "' + str(values[i]['href'].replace(" ", "")) + '", '
+                                    elif i == (len(fields)-1):
+                                        x += '"' + str(fields[i]).replace(" ", "_").lower() + '": "' + str(values[i]) + '" },'
+                                    else:
+                                        x += '"' + str(fields[i]).replace(" ", "_").lower() + '": "' + str(values[i]) + '", '
+
+                                for target in b.findAll(self.tags_info['tag_2'], {self.tags_info['tag_property_2']:self.tags_info['tag_property_value_2']}):
+                                    if self.checkIsValidLink(target.get(self.tags_info['property_page_img_link_2'])):
+                                        final_img_links.append(str(target.get(self.tags_info['property_page_img_link_2'])).replace(self.tags_info['expurge'], ''))
+
+                                if len(final_img_links) > 0:
+                                    self.saveFoundLink(final_img_links[0], prod_index, url_index, x)
+                                else:
+                                    not_found = open("prods_not_found.txt", "a+")
+                                    not_found.write(str(self.prods_list[prod_index][0]) + " " + str(self.prods_list[prod_index][1]) + "\n")
                 except Exception as e:
                     print("Trying again: " + str(count))
                     count += 1
@@ -173,7 +208,6 @@ class ProdImageCrawler:
     def crawThroughPages(self):
         url_index = 0
         for page in self.candidate_webpages:
-            # print("\nCrawling page: " + str(page[0]), end = '')
             prod_index = 0
             for prod_name in self.prods_list:
                 self.crawPage(url_index, (page[0] + prod_name[1]), prod_index)

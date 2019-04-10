@@ -1,0 +1,16 @@
+{
+  "tag_1": "a",
+  "tag_property_1": "data-sli-test",
+  "tag_property_value_1": "resultlink",
+  "property_page_img_link_1": "title",
+  "tag_2": "meta",
+  "tag_property_2": "property",
+  "tag_property_value_2": "og:image",
+  "property_page_img_link_2": "content",
+  "target_tag_1": "th",
+  "target_tag_2": "td",
+  "target_tag_property": "class",
+  "target_tag_property_value_1": "label",
+  "target_tag_property_value_2": "data",
+  "expurge": "?width=135&height=135&quality=85&type=resize"
+}

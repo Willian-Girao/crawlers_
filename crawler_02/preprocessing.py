@@ -1,7 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys, unicodedata
+import sys, unicodedata, json
+
+# Transforms a json inside a txt file into an actual python usable json structure.
+def getJsonFromTxt(file):
+    input_file = open(file, "r")
+    x = ""
+    for value in input_file:
+        x += value
+    f_json = json.loads(x)
+    return f_json
+
 
 # Prints each element of a list line by line.
 def printList(list):
